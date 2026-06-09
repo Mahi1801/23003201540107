@@ -1,4 +1,38 @@
-const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJNYXBDbGFpbXMiOnsiYXVkIjoiaHR0cDovLzIwLjI0NC41Ni4xNDQvZXZhbHVhdGlvbi1zZXJ2aWNlIiwiZW1haWwiOiJtYWhpLjIzYjE1NDEwMjVAYWJlcy5hYy5pbiIsImV4cCI6MTc4MDk4OTQ5MiwiaWF0IjoxNzgwOTg4NTkyLCJpc3MiOiJBZmZvcmQgTWVkaWNhbCBUZWNobm9sb2dpZXMgUHJpdmF0ZSBMaW1pdGVkIiwianRpIjoiN2IzMjZmM2EtMDMwOS00MTk5LTgzMWMtYjI0ZjBiM2M2ZmEyIiwibG9jYWxlIjoiZW4tSU4iLCJuYW1lIjoibWFoaSBzaW5naGFsIiwic3ViIjoiOGUyOTVjZmUtNDMxMi00M2M3LWE0ZTItOGVmY2FkNjVlMjI2In0sImVtYWlsIjoibWFoaS4yM2IxNTQxMDI1QGFiZXMuYWMuaW4iLCJuYW1lIjoibWFoaSBzaW5naGFsIiwicm9sbE5vIjoiMjMwMDMyMTU0MDEwNyIsImFjY2Vzc0NvZGUiOiJjWHVxaHQiLCJjbGllbnRJRCI6IjhlMjk1Y2ZlLTQzMTItNDNjNy1hNGUyLThlZmNhZDY1ZTIyNiIsImNsaWVudFNlY3JldCI6IndzVm5wd0FXVkJjVmROamsifQ.ujmQl9b4TMnnkst3YKSYN5UhUW7u7MO_Yhjn4q6Q7IM";
+const CREDENTIALS = {
+  email: "mahi.23b1541025@abes.ac.in",
+  name: "mahi singhal",
+  rollNo: "2300321540107",
+  accessCode: "cXuqht",
+  clientID: "8e295cfe-4312-43c7-a4e2-8efcad65e226",
+  clientSecret: "wsVnpwAWVBcVdNjk"
+};
+
+let cachedToken: string | null = null;
+let cachedTokenExpiry = 0;
+
+async function getAuthToken() {
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedToken && now < cachedTokenExpiry - 30) {
+    return cachedToken;
+  }
+
+  const authResponse = await fetch("http://4.224.186.213/evaluation-service/auth", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(CREDENTIALS)
+  });
+
+  if (!authResponse.ok) {
+    throw new Error(`Authentication failed with status ${authResponse.status}`);
+  }
+
+  const authData = await authResponse.json();
+  cachedToken = authData.access_token;
+  cachedTokenExpiry = authData.expires_in;
+  return cachedToken;
+}
 
 const WEIGHT: Record<string, number> = {
   Placement: 3,
@@ -9,12 +43,13 @@ const WEIGHT: Record<string, number> = {
 async function fetchNotifications() {
   console.log("fetchNotifications: Initiating HTTP request...");
   try {
+    const token = await getAuthToken();
     const response = await fetch(
       "http://4.224.186.213/evaluation-service/notifications",
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${AUTH_TOKEN}`,
+          Authorization: `Bearer ${token}`,
         },
       }
     );
